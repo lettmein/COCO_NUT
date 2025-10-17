@@ -1,0 +1,48 @@
+services:
+
+  db:
+    image: postgres:16
+    container_name: db
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - '5432:5432'
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 3s
+      retries: 2
+
+  be-1:
+    build:
+      context: .
+      dockerfile: ./backend-1/Dockerfile
+    container_name: be-1
+    env_file:
+      - .env
+  be-2:
+    build:
+      context: .
+      dockerfile: ./backend-2/Dockerfile
+    container_name: be-2
+    env_file:
+      - .env
+  fe-1:
+    build:
+      context: .
+      dockerfile: ./frontend-1/Dockerfile
+    container_name: fe-1
+    env_file:
+      - .env
+  fe-2:
+    build:
+      context: .
+      dockerfile: ./frontend-2/Dockerfile
+    container_name: fe-2
+    env_file:
+      - .env
+volumes:
+  pg_data:
