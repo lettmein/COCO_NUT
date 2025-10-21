@@ -30,6 +30,13 @@ services:
     container_name: be-2
     env_file:
       - .env
+  be-3:
+    build:
+      context: .
+      dockerfile: ./backend-3/Dockerfile
+    container_name: be-3
+    env_file:
+      - .env
   fe-1:
     build:
       context: .
