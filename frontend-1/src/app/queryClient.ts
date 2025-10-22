@@ -1,5 +1,4 @@
 import { useMutation } from "@tanstack/react-query";
-import { createShipment } from "../api/shipment.api";
 
 export const useCreateShipment = () =>
     useMutation({
@@ -8,8 +7,7 @@ export const useCreateShipment = () =>
         onError: (err) => toast.error("Ошибка при создании заявки"),
     });
 
-
-export const createShipment = async (data: ShipmentFormData) => {
+export const createShipment = async (data: any) => {
     const res = await fetch("/api/shipments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
