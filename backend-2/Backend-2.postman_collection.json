@@ -1,0 +1,304 @@
+{
+  "info": {
+    "name": "Backend-2 API",
+    "description": "API для сервисов Request и Office",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "request_service_url",
+      "value": "http://localhost:8081",
+      "type": "string"
+    },
+    {
+      "key": "office_service_url",
+      "value": "http://localhost:8082",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Request Service",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{request_service_url}}/health",
+              "host": ["{{request_service_url}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Create Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"logistic_point_id\": 1,\n  \"customer\": {\n    \"company_name\": \"ВНИИЭФ ФГУП\",\n    \"inn\": \"5254001234\",\n    \"contact_name\": \"Иванов Сергей Петрович\",\n    \"phone\": \"+79201234567\",\n    \"email\": \"ivanov@vniief.ru\"\n  },\n  \"cargo\": {\n    \"name\": \"Специальное оборудование\",\n    \"quantity\": 15,\n    \"weight\": 2500.00,\n    \"volume\": 35.5,\n    \"special_requirements\": \"Требуется температурный режим +15-25°C\"\n  },\n  \"recipient\": {\n    \"company_name\": \"Заречный филиал\",\n    \"address\": \"ул. Ленинградская, 27, офис 3, Заречный, Свердловская обл.\",\n    \"contact_name\": \"Петров Алексей Иванович\",\n    \"phone\": \"+79207654321\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{request_service_url}}/api/v1/requests",
+              "host": ["{{request_service_url}}"],
+              "path": ["api", "v1", "requests"]
+            }
+          }
+        },
+        {
+          "name": "Get All Requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{request_service_url}}/api/v1/requests",
+              "host": ["{{request_service_url}}"],
+              "path": ["api", "v1", "requests"]
+            }
+          }
+        },
+        {
+          "name": "Get Requests by Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{request_service_url}}/api/v1/requests?status=pending",
+              "host": ["{{request_service_url}}"],
+              "path": ["api", "v1", "requests"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Request by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{request_service_url}}/api/v1/requests/:id",
+              "host": ["{{request_service_url}}"],
+              "path": ["api", "v1", "requests", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "447fa6fb-b611-4f5a-a0cf-87f3ed6fb026"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Request Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"in_transit\"\n}"
+            },
+            "url": {
+              "raw": "{{request_service_url}}/api/v1/requests/:id/status",
+              "host": ["{{request_service_url}}"],
+              "path": ["api", "v1", "requests", ":id", "status"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "447fa6fb-b611-4f5a-a0cf-87f3ed6fb026"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Request",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{request_service_url}}/api/v1/requests/:id",
+              "host": ["{{request_service_url}}"],
+              "path": ["api", "v1", "requests", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "447fa6fb-b611-4f5a-a0cf-87f3ed6fb026"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Office Service",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{office_service_url}}/health",
+              "host": ["{{office_service_url}}"],
+              "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Create Route",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"max_volume\": 87.0,\n  \"max_weight\": 16050.0,\n  \"departure_date\": \"2025-10-24T08:00:00Z\",\n  \"route_points\": [\n    {\n      \"latitude\": 54.93869544589972,\n      \"longitude\": 43.31275114766075,\n      \"address\": \"ул. Зернова, 34, Саров, Нижегородская обл. (ВНИИЭФ ФГУП)\"\n    },\n    {\n      \"latitude\": 56.79469832748941,\n      \"longitude\": 61.312923642561195,\n      \"address\": \"ул. Ленинградская, 27, Заречный, Свердловская обл.\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{office_service_url}}/api/v1/routes",
+              "host": ["{{office_service_url}}"],
+              "path": ["api", "v1", "routes"]
+            }
+          }
+        },
+        {
+          "name": "Create Route (Multi-point)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"max_volume\": 99.0,\n  \"max_weight\": 19950.0,\n  \"departure_date\": \"2025-10-25T06:00:00Z\",\n  \"route_points\": [\n    {\n      \"latitude\": 55.80480151634083,\n      \"longitude\": 37.59403745557499,\n      \"address\": \"ул. Складочная, 1, стр. 5, Москва (АО НИКИЭТ)\"\n    },\n    {\n      \"latitude\": 56.8453929039356,\n      \"longitude\": 60.618204455916455,\n      \"address\": \"ул. Луначарского, д. 130, Екатеринбург (НПО Автоматики)\"\n    },\n    {\n      \"latitude\": 56.801507980298254,\n      \"longitude\": 60.631047966479954,\n      \"address\": \"ул. Белинского, 232, Екатеринбург\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{office_service_url}}/api/v1/routes",
+              "host": ["{{office_service_url}}"],
+              "path": ["api", "v1", "routes"]
+            }
+          }
+        },
+        {
+          "name": "Get All Routes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{office_service_url}}/api/v1/routes",
+              "host": ["{{office_service_url}}"],
+              "path": ["api", "v1", "routes"]
+            }
+          }
+        },
+        {
+          "name": "Get Routes by Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{office_service_url}}/api/v1/routes?status=pending",
+              "host": ["{{office_service_url}}"],
+              "path": ["api", "v1", "routes"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Route by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{office_service_url}}/api/v1/routes/:id",
+              "host": ["{{office_service_url}}"],
+              "path": ["api", "v1", "routes", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "4ffd15b4-9e56-40a8-8ffb-ff26f13c7b53"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Route Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"in_progress\"\n}"
+            },
+            "url": {
+              "raw": "{{office_service_url}}/api/v1/routes/:id/status",
+              "host": ["{{office_service_url}}"],
+              "path": ["api", "v1", "routes", ":id", "status"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "4ffd15b4-9e56-40a8-8ffb-ff26f13c7b53"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Route",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{office_service_url}}/api/v1/routes/:id",
+              "host": ["{{office_service_url}}"],
+              "path": ["api", "v1", "routes", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "4ffd15b4-9e56-40a8-8ffb-ff26f13c7b53"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -4,12 +4,15 @@ services:
     image: postgres:16
     container_name: db
     restart: always
-    env_file:
-      - .env
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
     ports:
       - '5432:5432'
     volumes:
       - pg_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
@@ -18,38 +21,82 @@ services:
 
   be-1:
     build:
-      context: .
-      dockerfile: ./backend-1/Dockerfile
+      context: ./backend-1
+      dockerfile: Dockerfile
     container_name: be-1
     env_file:
       - .env
-  be-2:
+    depends_on:
+      db:
+        condition: service_healthy
+
+  be-2-request:
     build:
-      context: .
-      dockerfile: ./backend-2/Dockerfile
-    container_name: be-2
-    env_file:
-      - .env
+      context: ./backend-2/Request
+      dockerfile: Dockerfile
+    container_name: be-2-request
+    environment:
+      PORT: "8081"
+      SERVICE_NAME: "request-service"
+      DB_HOST: "db"
+      DB_PORT: "5432"
+      DB_USER: "postgres"
+      DB_PASSWORD: "postgres"
+      DB_NAME: "request_db"
+      AUDIT_SERVICE_URL: "http://be-3:8083"
+    ports:
+      - "8081:8081"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  be-2-office:
+    build:
+      context: ./backend-2/Office
+      dockerfile: Dockerfile
+    container_name: be-2-office
+    environment:
+      PORT: "8082"
+      SERVICE_NAME: "office-service"
+      DB_HOST: "db"
+      DB_PORT: "5432"
+      DB_USER: "postgres"
+      DB_PASSWORD: "postgres"
+      DB_NAME: "office_db"
+      AUDIT_SERVICE_URL: "http://be-3:8083"
+      REQUEST_SERVICE_URL: "http://be-2-request:8081"
+    ports:
+      - "8082:8082"
+    depends_on:
+      db:
+        condition: service_healthy
+
   be-3:
     build:
-      context: .
-      dockerfile: ./backend-3/Dockerfile
+      context: ./backend-3
+      dockerfile: Dockerfile
     container_name: be-3
     env_file:
       - .env
+    depends_on:
+      db:
+        condition: service_healthy
+
   fe-1:
     build:
-      context: .
-      dockerfile: ./frontend-1/Dockerfile
+      context: ./frontend-1
+      dockerfile: Dockerfile
     container_name: fe-1
     env_file:
       - .env
+
   fe-2:
     build:
-      context: .
-      dockerfile: ./frontend-2/Dockerfile
+      context: ./frontend-2
+      dockerfile: Dockerfile
     container_name: fe-2
     env_file:
       - .env
+
 volumes:
   pg_data:

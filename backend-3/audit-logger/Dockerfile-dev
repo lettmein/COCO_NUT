@@ -1,0 +1,9 @@
+FROM golang:1.20-alpine
+
+RUN go install github.com/cosmtrek/air@latest
+RUN go install github.com/go-delve/delve/cmd/dlv@latest
+
+WORKDIR /app
+
+ENTRYPOINT ["air", "-c", ".air.server.toml", "--"]
+CMD ["server"]
