@@ -1,27 +1,20 @@
-# Dev образ с хот-релоадом
-FROM golang:1.24.6-alpine AS base
-WORKDIR /app
-RUN apk add --no-cache git curl build-base
-COPY backend-1/go.mod backend-1/go.sum ./
-RUN go mod download
-
-FROM base AS dev
-RUN go install github.com/air-verse/air@latest
-COPY backend-1/ .
-EXPOSE 8080
-CMD ["air", "-c", ".air.toml"]
-
-# Prod сборка
+# Сборка бинарника
 FROM golang:1.24.6-alpine AS builder
 WORKDIR /src
+RUN apk add --no-cache git ca-certificates
 COPY backend-1/go.mod backend-1/go.sum ./
 RUN go mod download
 COPY backend-1/ .
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /bin/app ./cmd/server
+# статическая сборка
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /app/app ./cmd/server
 
-# Минимальный рантайм
-FROM gcr.io/distroless/static-debian12 AS prod
-COPY --from=builder /bin/app /app
+# Рантайм без Air
+FROM alpine:3.20 AS prod
+RUN apk add --no-cache ca-certificates curl
+WORKDIR /app
+COPY --from=builder /app/app /app/app
+# Копируем миграции и данные, чтобы applyMigrations и сидер работали внутри контейнера
+COPY --from=builder /src/migrations /app/migrations
+COPY --from=builder /src/data /app/data
 EXPOSE 8080
-USER 65532:65532
-ENTRYPOINT ["/app"]
+ENTRYPOINT ["/app/app"]

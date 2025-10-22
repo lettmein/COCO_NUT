@@ -20,16 +20,3 @@ CREATE TABLE IF NOT EXISTS routes_lists (
 );
 
 CREATE INDEX IF NOT EXISTS idx_routes_lists_route ON routes_lists(route_id);
-
--- минимальные добавления к существующим таблицам (безопасно, если колонок нет)
-ALTER TABLE IF EXISTS requests
-  ADD COLUMN IF NOT EXISTS origin_point_id BIGINT,
-  ADD COLUMN IF NOT EXISTS dest_point_id BIGINT;
-
-ALTER TABLE IF EXISTS route_points
-  ADD COLUMN IF NOT EXISTS point_id BIGINT;
-
--- индексы для быстроты
-CREATE INDEX IF NOT EXISTS idx_requests_status_ready ON requests(status, ready_at);
-CREATE INDEX IF NOT EXISTS idx_requests_dest ON requests(dest_point_id);
-CREATE INDEX IF NOT EXISTS idx_route_points_route ON route_points(route_id);

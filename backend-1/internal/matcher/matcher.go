@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"math"
 	"sort"
 	"time"
@@ -34,36 +35,44 @@ func NewService(r *repo.Repo, rc routing.RouterClient, aud *audit.Client, maxDet
 	}
 }
 
+// MatchRoute подбирает заявки и записывает их в routes_lists. Никогда не возвращает nil, только [].
 func (s *Service) MatchRoute(ctx context.Context, routeID int64) ([]models.Assignment, error) {
 	tx, err := s.Repo.Begin(ctx)
 	if err != nil {
-		return nil, err
+		return []models.Assignment{}, err
 	}
 	defer tx.Rollback(ctx)
 
-	if ok, err := s.Repo.AdvisoryLock(ctx, tx, routeID); err != nil {
-		return nil, err
-	} else if !ok {
-		return nil, nil
+	ok, err := s.Repo.AdvisoryLock(ctx, tx, routeID)
+	if err != nil {
+		return []models.Assignment{}, err
+	}
+	if !ok {
+		// кто-то уже считает (например, воркер)
+		log.Printf("match route=%d: skipped (lock busy)", routeID)
+		return []models.Assignment{}, nil
 	}
 
 	route, err := s.Repo.GetRoute(ctx, tx, routeID)
 	if err != nil {
-		return nil, err
+		return []models.Assignment{}, err
 	}
 	if len(route.Points) < 2 {
-		return nil, fmt.Errorf("route %d: need at least 2 points", routeID)
+		log.Printf("match route=%d: invalid route points", routeID)
+		return []models.Assignment{}, fmt.Errorf("route %d: need at least 2 points", routeID)
 	}
 
 	cands, err := s.Repo.LoadPendingRequests(ctx, tx, route.DepartAt)
 	if err != nil {
-		return nil, err
+		return []models.Assignment{}, err
 	}
 	if len(cands) == 0 {
+		log.Printf("match route=%d: no candidates (pending/ready)", routeID)
 		_ = tx.Commit(ctx)
-		return nil, nil
+		return []models.Assignment{}, nil
 	}
 
+	// матрица времени по дорогам: [start, candidates..., end]
 	start := route.Points[0].Point
 	end := route.Points[len(route.Points)-1].Point
 
@@ -76,11 +85,12 @@ func (s *Service) MatchRoute(ctx context.Context, routeID int64) ([]models.Assig
 
 	mat, err := s.Router.Matrix(ctx, allCoords)
 	if err != nil {
-		return nil, err
+		return []models.Assignment{}, err
 	}
 
 	base := mat[0][len(allCoords)-1]
 
+	// скоринг кандидатов
 	type scored struct {
 		Req   models.Request
 		Score float64
@@ -102,6 +112,7 @@ func (s *Service) MatchRoute(ctx context.Context, routeID int64) ([]models.Assig
 		scoredC = append(scoredC, scored{Req: r, Score: score, Det: detour})
 	}
 
+	// жадный 2D рюкзак
 	sort.Slice(scoredC, func(i, j int) bool { return scoredC[i].Score > scoredC[j].Score })
 	wRem, vRem := route.MaxW, route.MaxV
 	picked := make([]scored, 0, len(scoredC))
@@ -119,10 +130,12 @@ func (s *Service) MatchRoute(ctx context.Context, routeID int64) ([]models.Assig
 	}
 
 	if len(picked) == 0 {
+		log.Printf("match route=%d: zero picked (constraints/detour)", routeID)
 		_ = tx.Commit(ctx)
-		return nil, nil
+		return []models.Assignment{}, nil
 	}
 
+	// соберём матрицу для [start + picked + end]
 	coords := make([]routing.Coord, 0, len(picked)+2)
 	coords = append(coords, routing.Coord{Lat: start.Lat, Lon: start.Lon})
 	for _, p := range picked {
@@ -132,11 +145,13 @@ func (s *Service) MatchRoute(ctx context.Context, routeID int64) ([]models.Assig
 
 	mat2, err := s.Router.Matrix(ctx, coords)
 	if err != nil {
-		return nil, err
+		return []models.Assignment{}, err
 	}
 
+	// порядок: NN + 2-opt, фикс. начало/конец
 	order := solvePathFixed(mat2)
 
+	// ETA
 	assign := make([]models.Assignment, 0, len(picked))
 	cur := route.DepartAt
 	for seq := 1; seq < len(order); seq++ {
@@ -156,12 +171,13 @@ func (s *Service) MatchRoute(ctx context.Context, routeID int64) ([]models.Assig
 	}
 
 	if err := s.Repo.SaveAssignments(ctx, tx, route.ID, assign); err != nil {
-		return nil, err
+		return []models.Assignment{}, err
 	}
 	if err := tx.Commit(ctx); err != nil {
-		return nil, err
+		return []models.Assignment{}, err
 	}
 
+	// аудит — best-effort
 	if s.Audit != nil {
 		s.Audit.Send(ctx, audit.Event{
 			FromService: "matcher",
@@ -173,6 +189,7 @@ func (s *Service) MatchRoute(ctx context.Context, routeID int64) ([]models.Assig
 		})
 	}
 
+	log.Printf("match route=%d: saved %d assignments", route.ID, len(assign))
 	return assign, nil
 }
 
@@ -225,6 +242,7 @@ func solvePathFixed(mat [][]float64) []int {
 		cur = best
 	}
 	order = append(order, n-1)
+	// 2-opt c фикс. концами
 	improved := true
 	for improved {
 		improved = false
