@@ -2,7 +2,7 @@ import {Card, CardContent, CardHeader, CardTitle} from "../ui/card.tsx";
 import {Label} from "../ui/label.tsx";
 import {Input} from "../ui/input.tsx";
 
-function SenderForm({ register, errors }: any) {
+export function SenderForm({ register, errors }: any) {
     return (
         <Card>
             <CardHeader>

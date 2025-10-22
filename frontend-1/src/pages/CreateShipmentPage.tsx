@@ -1,11 +1,27 @@
-import {useMutation, useQueryClient} from "@tanstack/react-query";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {Controller, useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {Card, CardContent, CardHeader, CardTitle} from "../components/ui/card.tsx";
-import {Button} from "../components/ui/button.tsx";
-import {Separator} from "../components/ui/separator.tsx";
+import {Separator, Button, Card, CardContent, CardHeader, CardTitle} from "../components/ui/index.tsx";
 
-import {  }
+import {CargoSpecificationForm} from "../components/forms/cargoSpecificationForm.tsx";
+import {ReceiverForm} from "../components/forms/receiverForm";
+import {SenderForm} from "../components/forms/senderForm.tsx";
+
+import type { ShipmentForm } from '../types/types.ts';
+import { cargoItemSchema, shipmentSchema} from '../shared/validation.ts'
+import { createShipmentApi } from '../shared/api/api.ts'
+import React from "react";
+
+import { fetchLogisticsPoints } from '../shared/api/api.ts'
+
+
+// function LogisticsPointSelect({ control }: { control: any }) {
+//     // Basic async select using TanStack Query
+//     const [search, setSearch] = React.useState("");
+//     const { data = [], isLoading } = useQuery(["logisticsPoints", search], () => fetchLogisticsPoints(search), {
+//         staleTime: 1000 * 60 * 5,
+//     });
+
 
 export default function CreateShipmentPage() {
     const queryClient = useQueryClient();
@@ -48,14 +64,14 @@ export default function CreateShipmentPage() {
                     <CardHeader>
                         <CardTitle>Параметры отправки</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                            <div className="md:col-span-2">
-                                <Controller name="logisticsPointId" control={control} render={({ field }) => <LogisticsPointSelect control={control} />} />
-                                {errors?.logisticsPointId && <p className="text-red-600">{(errors as any).logisticsPointId?.message}</p>}
-                            </div>
-                        </div>
-                    </CardContent>
+                    {/*<CardContent>*/}
+                    {/*    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">*/}
+                    {/*        <div className="md:col-span-2">*/}
+                    {/*            <Controller name="logisticsPointId" control={control} render={({ field }) => <LogisticsPointSelect control={control} />} />*/}
+                    {/*            {errors?.logisticsPointId && <p className="text-red-600">{(errors as any).logisticsPointId?.message}</p>}*/}
+                    {/*        </div>*/}
+                    {/*    </div>*/}
+                    {/*</CardContent>*/}
                 </Card>
 
                 <SenderForm register={register} errors={errors} />
