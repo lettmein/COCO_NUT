@@ -1,18 +1,18 @@
 import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {Controller, useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
-import {Separator, Button, Card, CardContent, CardHeader, CardTitle} from "../components/ui/index.tsx";
+import {Separator, Button, Card, CardContent, CardHeader, CardTitle} from "../components/ui/index.ts";
 
 import {CargoSpecificationForm} from "../components/forms/cargoSpecificationForm.tsx";
 import {ReceiverForm} from "../components/forms/receiverForm";
 import {SenderForm} from "../components/forms/senderForm.tsx";
 
 import type { ShipmentForm } from '../types/types.ts';
-import { cargoItemSchema, shipmentSchema} from '../shared/validation.ts'
+import { shipmentSchema } from '../shared/validation.ts'
 import { createShipmentApi } from '../shared/api/api.ts'
-import React from "react";
+// import { Toaster } from '../components/ui/index.ts'
 
-import { fetchLogisticsPoints } from '../shared/api/api.ts'
+// import { fetchLogisticsPoints } from '../shared/api/api.ts'
 
 
 // function LogisticsPointSelect({ control }: { control: any }) {
@@ -41,12 +41,11 @@ export default function CreateShipmentPage() {
 
     const createMutation = useMutation((payload: ShipmentForm) => createShipmentApi(payload), {
         onSuccess: (data) => {
-            toast({ title: 'Заявка создана', description: `Заявка №${data.id} успешно создана` });
+            // toast({ title: 'Заявка создана', description: `Заявка №${data.id} успешно создана` });
             queryClient.invalidateQueries(['shipments']);
-            // Reset cargoSpecificationForm.tsx or redirect as needed
         },
         onError: (err: any) => {
-            toast({ title: 'Ошибка', description: err.message || 'Не удалось создать заявку' });
+            // toast({ title: 'Ошибка', description: err.message || 'Не удалось создать заявку' });
         },
     });
 

@@ -13,7 +13,6 @@ export async function createShipmentApi(payload: ShipmentForm) {
     return res.json();
 }
 
-
 export async function fetchLogisticsPoints(search = "") {
     const qs = search ? `?search=${encodeURIComponent(search)}` : "";
     const res = await fetch(`/api/logistics-points${qs}`);
