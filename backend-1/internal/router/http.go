@@ -28,7 +28,7 @@ func New(r *repo.Repo, m *matcher.Service) http.Handler {
 }
 
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
 
@@ -39,12 +39,28 @@ func (s *Server) matchRoute(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad route id", http.StatusBadRequest)
 		return
 	}
+
 	as, err := s.M.MatchRoute(r.Context(), routeID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	_ = json.NewEncoder(w).Encode(map[string]any{"route_id": routeID, "assigned": as})
+
+	src := "recomputed"
+	if len(as) == 0 {
+		// пересчёт не выполнен (лок/нет кандидатов/никого не подобрали) — вернём текущее состояние из БД
+		if cur, err2 := s.R.GetAssignments(r.Context(), routeID); err2 == nil {
+			as = cur
+		}
+		src = "db"
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"route_id":    routeID,
+		"assignments": as,
+		"source":      src,
+	})
 }
 
 func (s *Server) getAssignments(w http.ResponseWriter, r *http.Request) {
@@ -59,5 +75,6 @@ func (s *Server) getAssignments(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]any{"route_id": routeID, "assignments": as})
 }

@@ -67,6 +67,7 @@ func main() {
 
 	m := matcher.NewService(repository, routerClient, auditClient, cfg.MatchMaxDetourMin, cfg.MatchRadiusKm, cfg.MatchAvgSpeedKmh)
 
+	// HTTP
 	handler := router.New(repository, m)
 	srv := &http.Server{
 		Addr:              ":8080",
@@ -74,8 +75,13 @@ func main() {
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	w := &worker.Worker{Repo: repository, Matcher: m, Interval: cfg.WorkerInterval}
-	go w.Run(ctx)
+	// worker — запускаем только если интервал > 0 (можно выключить на время ручных тестов)
+	if cfg.WorkerInterval > 0 {
+		w := &worker.Worker{Repo: repository, Matcher: m, Interval: cfg.WorkerInterval}
+		go w.Run(ctx)
+	} else {
+		log.Printf("worker disabled")
+	}
 
 	go func() {
 		log.Printf("be-1 (matcher) listening on %s", srv.Addr)
@@ -96,7 +102,6 @@ func applyMigrations(ctx context.Context, pool *pgxpool.Pool) error {
 	if err != nil {
 		return err
 	}
-	// на всякий случай разобьём по ; чтобы точно выполнить все стейтменты
 	for _, stmt := range strings.Split(string(b), ";\n") {
 		stmt = strings.TrimSpace(stmt)
 		if stmt == "" {
