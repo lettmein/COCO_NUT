@@ -113,11 +113,7 @@ services:
     container_name: fe-2
     env_file:
       - .env
-<<<<<<< HEAD
 
-=======
-      
->>>>>>> 8da3ac8 (2.5 hour)
 volumes:
   pg_data:
 
