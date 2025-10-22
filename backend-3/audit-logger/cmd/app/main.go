@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"go.uber.org/fx"
-	"log"
 	"myapp/internal/config"
 	"myapp/internal/handler"
 	"myapp/internal/repository"
@@ -17,9 +16,9 @@ func main() {
 		fx.Provide(
 			config.New,
 			logger.New,
-			repository.NewRepository,
-			service.NewService,
-			handler.NewHandler,
+			repository.NewLoggerRepository,
+			service.NewLoggerService,
+			handler.NewLoggerHandler,
 		),
 
 		// Запуск приложения
@@ -31,7 +30,7 @@ func main() {
 
 func registerHooks(
 	lc fx.Lifecycle,
-	handler *handler.Handler,
+	handler *handler.LoggerHandler,
 	config *config.Config,
 	log *logger.Logger,
 ) {
