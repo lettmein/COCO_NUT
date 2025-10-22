@@ -97,13 +97,15 @@ func (r *Repo) SaveAssignments(ctx context.Context, tx pgx.Tx, routeID int64, as
 	if err := br.Close(); err != nil {
 		return err
 	}
-	// статусы заявок
+
+	// статусы заявок -> assigned
 	if len(as) > 0 {
 		ids := make([]int64, 0, len(as))
 		for _, a := range as {
 			ids = append(ids, a.RequestID)
 		}
-		_, _ = tx.Exec(ctx, `UPDATE requests SET status='assigned' WHERE id = ANY($1)`, ids)
+		// В pgx v5 можно передать []int64 и привести параметр к ::bigint[]
+		_, _ = tx.Exec(ctx, `UPDATE requests SET status='assigned' WHERE id = ANY($1::bigint[])`, ids)
 	}
 	return nil
 }
@@ -125,9 +127,10 @@ func (r *Repo) GetAssignments(ctx context.Context, routeID int64) ([]models.Assi
 	return out, rows.Err()
 }
 
+// транзакционный advisory lock (освобождается при COMMIT/ROLLBACK)
 func (r *Repo) AdvisoryLock(ctx context.Context, tx pgx.Tx, key int64) (bool, error) {
 	var ok bool
-	if err := tx.QueryRow(ctx, `SELECT pg_try_advisory_lock($1)`, key).Scan(&ok); err != nil {
+	if err := tx.QueryRow(ctx, `SELECT pg_try_advisory_xact_lock($1)`, key).Scan(&ok); err != nil {
 		return false, err
 	}
 	return ok, nil

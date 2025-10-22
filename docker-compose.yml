@@ -22,15 +22,31 @@ services:
   be-1:
     build:
       context: ./backend-1
-      dockerfile: Dockerfile
+      dockerfile: ./backend-1/Dockerfile
+      target: prod
     container_name: be-1
     env_file:
       - .env
+    environment:
+      - USE_YANDEX=false           # пока выключим, включишь после получения ключа
+      - MATCH_RADIUS_KM=30
+      - MATCH_MAX_DETOUR_MIN=60
+      - MATCH_AVG_SPEED_KMH=60
+      - MATCH_WORKER_INTERVAL_SEC=30
+      - AUDIT_URL=                 # если есть аудит, укажи URL
+      - SEED_POINTS=true
     depends_on:
       db:
         condition: service_healthy
-
-  be-2-request:
+    ports:
+      - "${BE1_PORT:-8001}:8080"
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:8080/health > /dev/null || exit 1" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+  be-2:
     build:
       context: ./backend-2/Request
       dockerfile: Dockerfile
@@ -42,7 +58,7 @@ services:
       DB_PORT: "5432"
       DB_USER: "postgres"
       DB_PASSWORD: "postgres"
-      DB_NAME: "request_db"
+      DB_NAME: "app"
       AUDIT_SERVICE_URL: "http://be-3:8083"
     ports:
       - "8081:8081"
@@ -62,7 +78,7 @@ services:
       DB_PORT: "5432"
       DB_USER: "postgres"
       DB_PASSWORD: "postgres"
-      DB_NAME: "office_db"
+      DB_NAME: "app"
       AUDIT_SERVICE_URL: "http://be-3:8083"
       REQUEST_SERVICE_URL: "http://be-2-request:8081"
     ports:
@@ -70,6 +86,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      be-2-request:
+        condition: service_started
 
   be-3:
     build:
@@ -100,3 +118,8 @@ services:
 
 volumes:
   pg_data:
+
+networks:
+  default:
+    driver: bridge
+    enable_ipv6: false

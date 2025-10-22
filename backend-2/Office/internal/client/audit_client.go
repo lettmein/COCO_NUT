@@ -28,7 +28,7 @@ func (ac *AuditClient) SendLog(log *dto.AuditLogDTO) error {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", ac.baseURL+"/api/v1/audit/log", bytes.NewBuffer(data))
+	req, err := http.NewRequest("POST", ac.baseURL+"/api/v1/logs", bytes.NewBuffer(data))
 	if err != nil {
 		return err
 	}
