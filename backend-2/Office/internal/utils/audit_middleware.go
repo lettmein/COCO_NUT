@@ -15,18 +15,19 @@ func AuditMiddleware(serviceName string, auditClient *client.AuditClient) fiber.
 
 		err := c.Next()
 
-		processingTime := time.Since(start).Milliseconds()
+		duration := time.Since(start)
+		durationMs := float64(duration.Milliseconds())
 
 		responseBody := string(c.Response().Body())
 
 		auditLog := &dto.AuditLogDTO{
-			ServiceName:    serviceName,
-			RequestMethod:  c.Method(),
-			RequestURL:     c.OriginalURL(),
-			RequestBody:    requestBody,
-			ResponseBody:   responseBody,
-			StatusCode:     c.Response().StatusCode(),
-			ProcessingTime: processingTime,
+			ReqServiceType:  serviceName,
+			RespServiceType: "audit-logger",
+			Uri:             c.OriginalURL(),
+			CreatedAt:       time.Now(),
+			DurationTime:    durationMs,
+			RequestBody:     requestBody,
+			ResponseBody:    responseBody,
 		}
 
 		go auditClient.SendLog(auditLog)
