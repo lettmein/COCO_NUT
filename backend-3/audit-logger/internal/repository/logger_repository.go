@@ -7,15 +7,15 @@ import (
 	"myapp/internal/domain"
 )
 
-type loggerRepository struct {
+type LoggerRepository struct {
 	db *sql.DB
 }
 
 func NewLoggerRepository(db *sql.DB) domain.LoggerRepository {
-	return &loggerRepository{db: db}
+	return &LoggerRepository{db: db}
 }
 
-func (r *loggerRepository) Create(ctx context.Context, log *domain.Log) error {
+func (r *LoggerRepository) Create(ctx context.Context, log *domain.Log) error {
 	query := `
 		INSERT INTO logs 
 		(req_service_type, resp_service_type, uri, created_at, duration_time, request_body, response_body) 
@@ -36,127 +36,8 @@ func (r *loggerRepository) Create(ctx context.Context, log *domain.Log) error {
 	return err
 }
 
-func (r *loggerRepository) GetByID(ctx context.Context, id int) (*domain.Log, error) {
-	query := `
-		SELECT id, req_service_type, resp_service_type, uri, created_at, duration_time, request_body, response_body
-		FROM logs WHERE id = $1
-	`
-
-	log := &domain.Log{}
-	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&log.ID,
-		&log.ReqServiceType,
-		&log.RespServiceType,
-		&log.Uri,
-		&log.CreatedAt,
-		&log.DurationTime,
-		&log.RequestBody,
-		&log.ResponseBody,
-	)
-
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
-
-	return log, err
-}
-
-func (r *loggerRepository) GetAll(ctx context.Context, limit, offset int) ([]*domain.Log, error) {
-	query := `
-		SELECT id, req_service_type, resp_service_type, uri, created_at, duration_time, request_body, response_body
-		FROM logs 
-		ORDER BY created_at DESC 
-		LIMIT $1 OFFSET $2
-	`
-
-	rows, err := r.db.QueryContext(ctx, query, limit, offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var logs []*domain.Log
-	for rows.Next() {
-		log := &domain.Log{}
-		err := rows.Scan(
-			&log.ID,
-			&log.ReqServiceType,
-			&log.RespServiceType,
-			&log.Uri,
-			&log.CreatedAt,
-			&log.DurationTime,
-			&log.RequestBody,
-			&log.ResponseBody,
-		)
-		if err != nil {
-			return nil, err
-		}
-		logs = append(logs, log)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return logs, nil
-}
-
-func (r *loggerRepository) Update(ctx context.Context, id int, log *domain.Log) error {
-	query := `
-		UPDATE logs 
-		SET req_service_type = $1, resp_service_type = $2, uri = $3, duration_time = $4, 
-		    request_body = $5, response_body = $6
-		WHERE id = $7
-	`
-
-	result, err := r.db.ExecContext(ctx, query,
-		log.ReqServiceType,
-		log.RespServiceType,
-		log.Uri,
-		log.DurationTime,
-		log.RequestBody,
-		log.ResponseBody,
-		id,
-	)
-
-	if err != nil {
-		return err
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowsAffected == 0 {
-		return sql.ErrNoRows
-	}
-
-	return nil
-}
-
-func (r *loggerRepository) Delete(ctx context.Context, id int) error {
-	query := `DELETE FROM logs WHERE id = $1`
-
-	result, err := r.db.ExecContext(ctx, query, id)
-	if err != nil {
-		return err
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowsAffected == 0 {
-		return sql.ErrNoRows
-	}
-
-	return nil
-}
-
 // Дополнительный метод для фильтрации (может пригодиться для сервиса)
-func (r *loggerRepository) GetWithFilter(ctx context.Context, filter domain.LogFilter) ([]*domain.Log, error) {
+func (r *LoggerRepository) GetWithFilter(ctx context.Context, filter domain.LogFilter) ([]domain.Log, error) {
 	query := `SELECT id, req_service_type, resp_service_type, uri, created_at, duration_time, request_body, response_body FROM logs WHERE 1=1`
 	args := []interface{}{}
 	argPos := 1
@@ -216,9 +97,9 @@ func (r *loggerRepository) GetWithFilter(ctx context.Context, filter domain.LogF
 	}
 	defer rows.Close()
 
-	var logs []*domain.Log
+	var logs []domain.Log
 	for rows.Next() {
-		log := &domain.Log{}
+		log := domain.Log{}
 		err := rows.Scan(
 			&log.ID,
 			&log.ReqServiceType,

@@ -2,24 +2,21 @@ package main
 
 import (
 	"context"
-	"go.uber.org/fx"
-	"myapp/internal/config"
-	"myapp/internal/handler"
-	"myapp/internal/repository"
-	"myapp/internal/service"
+	"myapp/internal/modules"
+	"myapp/internal/server"
 	"myapp/pkg/logger"
+
+	"go.uber.org/fx"
 )
 
 func main() {
 	app := fx.New(
-		// Модули приложения
-		fx.Provide(
-			config.New,
-			logger.New,
-			repository.NewLoggerRepository,
-			service.NewLoggerService,
-			handler.NewLoggerHandler,
-		),
+		// Регистрация всех модулей
+		modules.Module,               // Базовые зависимости (config, logger)
+		modules.RepositoryModule,     // Репозитории
+		modules.ServiceModule,        // Сервисы
+		modules.HandlerModule,        // Обработчики
+		modules.InfrastructureModule, // Инфраструктура (router, server)
 
 		// Запуск приложения
 		fx.Invoke(registerHooks),
@@ -30,19 +27,18 @@ func main() {
 
 func registerHooks(
 	lc fx.Lifecycle,
-	handler *handler.LoggerHandler,
-	config *config.Config,
+	server *server.HTTPServer,
 	log *logger.Logger,
 ) {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			log.Info("Starting application on " + config.HTTP.Address)
-			go handler.Start(config.HTTP.Address)
+			log.Info("Starting application")
+			go server.Start()
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
 			log.Info("Stopping application")
-			return nil
+			return server.Shutdown(ctx)
 		},
 	})
 }

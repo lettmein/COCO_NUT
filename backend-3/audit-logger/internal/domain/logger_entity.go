@@ -27,15 +27,12 @@ type Log struct {
 
 type LoggerRepository interface {
 	Create(ctx context.Context, log *Log) error
-	GetByID(ctx context.Context, id int) (*Log, error)
-	GetAll(ctx context.Context, limit, offset int) ([]*Log, error)
-	Update(ctx context.Context, id int, log *Log) error
-	Delete(ctx context.Context, id int) error
+	GetWithFilter(ctx context.Context, filter LogFilter) ([]Log, error)
 }
 
 type LoggerService interface {
 	Create(ctx context.Context, log *Log) error
-	GetAllWithFilter(ctx context.Context, filter LogFilter) ([]*Log, error)
+	GetAllWithFilter(ctx context.Context, filter LogFilter) ([]Log, error)
 }
 
 type LogFilter struct {

@@ -1,51 +1,20 @@
 package config
 
-import (
-	"fmt"
-	"time"
-)
+import "github.com/kelseyhightower/envconfig"
 
 type Config struct {
-	Environment string
-	HTTP        HTTPConfig
-	Database    DatabaseConfig
+	HTTP HTTPConfig
 }
 
 type HTTPConfig struct {
-	Address string
-	Port    int
-	Timeout time.Duration
+	Address string `envconfig:"HTTP_ADDRESS" default:":8080"`
 }
 
-type DatabaseConfig struct {
-	Host     string
-	Port     int
-	User     string
-	Password string
-	DBName   string
-	SSLMode  string
-}
-
-func New() *Config {
-	return &Config{
-		Environment: "development",
-		HTTP: HTTPConfig{
-			Address: ":8080",
-			Port:    8080,
-			Timeout: 30 * time.Second,
-		},
-		Database: DatabaseConfig{
-			Host:     "localhost",
-			Port:     5432,
-			User:     "user",
-			Password: "password",
-			DBName:   "myapp",
-			SSLMode:  "disable",
-		},
+func New() (*Config, error) {
+	var cfg Config
+	err := envconfig.Process("", &cfg)
+	if err != nil {
+		return nil, err
 	}
-}
-
-func (db *DatabaseConfig) DSN() string {
-	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-		db.Host, db.Port, db.User, db.Password, db.DBName, db.SSLMode)
+	return &cfg, nil
 }
