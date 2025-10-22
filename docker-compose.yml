@@ -21,7 +21,7 @@ services:
 
   be-1:
     build:
-      context: ./backend-1
+      context: .
       dockerfile: ./backend-1/Dockerfile
       target: prod
     container_name: be-1

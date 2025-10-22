@@ -22,17 +22,6 @@ CREATE TABLE IF NOT EXISTS route_points (
     UNIQUE(route_id, seq_no)
 );
 
-CREATE TABLE IF NOT EXISTS routes_lists (
-    id BIGSERIAL PRIMARY KEY,
-    route_id BIGINT NOT NULL,
-    request_id BIGINT NOT NULL,
-    seq_no INT NOT NULL,
-    eta_plan TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE(route_id, request_id),
-    UNIQUE(route_id, seq_no)
-);
-
 CREATE INDEX IF NOT EXISTS idx_routes_status ON routes(status);
 CREATE INDEX IF NOT EXISTS idx_routes_depart_at ON routes(depart_at);
 CREATE INDEX IF NOT EXISTS idx_routes_created_at ON routes(created_at);

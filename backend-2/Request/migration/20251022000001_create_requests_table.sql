@@ -1,13 +1,5 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE TABLE IF NOT EXISTS logistic_points (
-    id BIGSERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    address TEXT,
-    lat DOUBLE PRECISION NOT NULL,
-    lon DOUBLE PRECISION NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS requests (
     id BIGSERIAL PRIMARY KEY,
     origin_point_id BIGINT REFERENCES logistic_points(id),

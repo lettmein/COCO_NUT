@@ -35,7 +35,6 @@ func NewService(r *repo.Repo, rc routing.RouterClient, aud *audit.Client, maxDet
 	}
 }
 
-// MatchRoute подбирает заявки и записывает их в routes_lists. Никогда не возвращает nil, только [].
 func (s *Service) MatchRoute(ctx context.Context, routeID int64) ([]models.Assignment, error) {
 	tx, err := s.Repo.Begin(ctx)
 	if err != nil {
@@ -48,7 +47,6 @@ func (s *Service) MatchRoute(ctx context.Context, routeID int64) ([]models.Assig
 		return []models.Assignment{}, err
 	}
 	if !ok {
-		// кто-то уже считает (например, воркер)
 		log.Printf("match route=%d: skipped (lock busy)", routeID)
 		return []models.Assignment{}, nil
 	}
@@ -58,23 +56,32 @@ func (s *Service) MatchRoute(ctx context.Context, routeID int64) ([]models.Assig
 		return []models.Assignment{}, err
 	}
 	if len(route.Points) < 2 {
-		log.Printf("match route=%d: invalid route points", routeID)
 		return []models.Assignment{}, fmt.Errorf("route %d: need at least 2 points", routeID)
 	}
 
-	cands, err := s.Repo.LoadPendingRequests(ctx, tx, route.DepartAt)
+	// кандидаты: pending + уже назначенные в этот маршрут (для переоценки)
+	cands, err := s.Repo.LoadCandidates(ctx, tx, route.ID, route.DepartAt)
 	if err != nil {
 		return []models.Assignment{}, err
 	}
-	if len(cands) == 0 {
-		log.Printf("match route=%d: no candidates (pending/ready)", routeID)
-		_ = tx.Commit(ctx)
-		return []models.Assignment{}, nil
-	}
 
-	// матрица времени по дорогам: [start, candidates..., end]
+	// coords: [start, candidates..., end]
 	start := route.Points[0].Point
 	end := route.Points[len(route.Points)-1].Point
+
+	assign := make([]models.Assignment, 0) // итоговый лист (может быть пустым — это ок)
+
+	if len(cands) == 0 {
+		// ВАЖНО: даже если кандидатов нет — очищаем лист (снятся старые назначения)
+		if err := s.Repo.SaveAssignments(ctx, tx, route.ID, assign); err != nil {
+			return []models.Assignment{}, err
+		}
+		if err := tx.Commit(ctx); err != nil {
+			return []models.Assignment{}, err
+		}
+		log.Printf("match route=%d: no candidates -> cleared list", routeID)
+		return assign, nil
+	}
 
 	allCoords := make([]routing.Coord, 0, len(cands)+2)
 	allCoords = append(allCoords, routing.Coord{Lat: start.Lat, Lon: start.Lon})
@@ -90,7 +97,6 @@ func (s *Service) MatchRoute(ctx context.Context, routeID int64) ([]models.Assig
 
 	base := mat[0][len(allCoords)-1]
 
-	// скоринг кандидатов
 	type scored struct {
 		Req   models.Request
 		Score float64
@@ -112,7 +118,6 @@ func (s *Service) MatchRoute(ctx context.Context, routeID int64) ([]models.Assig
 		scoredC = append(scoredC, scored{Req: r, Score: score, Det: detour})
 	}
 
-	// жадный 2D рюкзак
 	sort.Slice(scoredC, func(i, j int) bool { return scoredC[i].Score > scoredC[j].Score })
 	wRem, vRem := route.MaxW, route.MaxV
 	picked := make([]scored, 0, len(scoredC))
@@ -130,12 +135,17 @@ func (s *Service) MatchRoute(ctx context.Context, routeID int64) ([]models.Assig
 	}
 
 	if len(picked) == 0 {
-		log.Printf("match route=%d: zero picked (constraints/detour)", routeID)
-		_ = tx.Commit(ctx)
-		return []models.Assignment{}, nil
+		// ВАЖНО: если никто не подошёл — очищаем лист, снимаем старые назначения
+		if err := s.Repo.SaveAssignments(ctx, tx, route.ID, assign); err != nil {
+			return []models.Assignment{}, err
+		}
+		if err := tx.Commit(ctx); err != nil {
+			return []models.Assignment{}, err
+		}
+		log.Printf("match route=%d: zero picked -> cleared list", routeID)
+		return assign, nil
 	}
 
-	// соберём матрицу для [start + picked + end]
 	coords := make([]routing.Coord, 0, len(picked)+2)
 	coords = append(coords, routing.Coord{Lat: start.Lat, Lon: start.Lon})
 	for _, p := range picked {
@@ -148,18 +158,15 @@ func (s *Service) MatchRoute(ctx context.Context, routeID int64) ([]models.Assig
 		return []models.Assignment{}, err
 	}
 
-	// порядок: NN + 2-opt, фикс. начало/конец
 	order := solvePathFixed(mat2)
 
-	// ETA
-	assign := make([]models.Assignment, 0, len(picked))
 	cur := route.DepartAt
 	for seq := 1; seq < len(order); seq++ {
 		from := order[seq-1]
 		to := order[seq]
 		dur := mat2[from][to]
 		cur = cur.Add(time.Duration(dur * float64(time.Second)))
-		if to == len(order)-1 { // конец маршрута
+		if to == len(order)-1 {
 			break
 		}
 		pIndex := to - 1
@@ -177,7 +184,6 @@ func (s *Service) MatchRoute(ctx context.Context, routeID int64) ([]models.Assig
 		return []models.Assignment{}, err
 	}
 
-	// аудит — best-effort
 	if s.Audit != nil {
 		s.Audit.Send(ctx, audit.Event{
 			FromService: "matcher",
@@ -242,7 +248,7 @@ func solvePathFixed(mat [][]float64) []int {
 		cur = best
 	}
 	order = append(order, n-1)
-	// 2-opt c фикс. концами
+	// 2-opt
 	improved := true
 	for improved {
 		improved = false
