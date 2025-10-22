@@ -46,7 +46,7 @@ services:
       timeout: 3s
       retries: 10
       start_period: 20s
-  be-2:
+  be-2-request:
     build:
       context: ./backend-2/Request
       dockerfile: Dockerfile
