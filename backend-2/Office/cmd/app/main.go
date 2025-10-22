@@ -6,6 +6,7 @@ import (
 	"git.a7ru.app/a7hack/coco-nut/backend-2/office/internal/server"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"github.com/pressly/goose/v3"
 	"log"
 )
 
@@ -25,6 +26,12 @@ func main() {
 	}
 
 	log.Println("Successfully connected to database")
+
+	log.Println("Running migrations...")
+	if err := goose.Up(db, "/root/migration"); err != nil {
+		log.Fatalf("Failed to run migrations: %v", err)
+	}
+	log.Println("Migrations completed successfully")
 
 	srv := server.NewServer(cfg, db)
 

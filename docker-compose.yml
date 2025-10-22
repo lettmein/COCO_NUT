@@ -58,7 +58,7 @@ services:
       DB_PORT: "5432"
       DB_USER: "postgres"
       DB_PASSWORD: "postgres"
-      DB_NAME: "request_db"
+      DB_NAME: "app"
       AUDIT_SERVICE_URL: "http://be-3:8083"
     ports:
       - "8081:8081"
@@ -78,7 +78,7 @@ services:
       DB_PORT: "5432"
       DB_USER: "postgres"
       DB_PASSWORD: "postgres"
-      DB_NAME: "office_db"
+      DB_NAME: "app"
       AUDIT_SERVICE_URL: "http://be-3:8083"
       REQUEST_SERVICE_URL: "http://be-2-request:8081"
     ports:
@@ -86,6 +86,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      be-2-request:
+        condition: service_started
 
   be-3:
     build:

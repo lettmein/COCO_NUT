@@ -1,2 +1,1 @@
-CREATE DATABASE request_db;
-CREATE DATABASE office_db;
+CREATE DATABASE app;
