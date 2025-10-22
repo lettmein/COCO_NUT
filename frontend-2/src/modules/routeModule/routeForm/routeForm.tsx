@@ -1,5 +1,5 @@
-import { Card, Input, Button } from '@/shared/ui/index';
-import {useRouteCreate} from './model/useRouteCreate'
+import { Card,  Button } from '@/shared/ui/index';
+import { useRouteCreate } from './model/useRouteCreate'
 
 interface Props {
   points: { latitude: number; longitude: number; address?: string }[];
@@ -12,21 +12,21 @@ export default function RouteForm({ points }: Props) {
     <Card className="p-4 space-y-4">
       <h2>Форма маршрута</h2>
 
-      <Input
+      <input
         type="number"
         {...register('maxVolume',  { valueAsNumber: true })}
         placeholder="Допустимый объем"
       />
       {errors.maxVolume && <span className="text-red-500">{errors.maxVolume.message}</span>}
 
-      <Input
+      <input
         type="number"
         {...register('maxWeight',  { valueAsNumber: true })}
         placeholder="Допустимый вес"
       />
       {errors.maxWeight && <span className="text-red-500">{errors.maxWeight.message}</span>}
 
-      <Input
+      <input
         type="datetime-local"
         {...register('departureDate')}
         placeholder="Дата отправления"

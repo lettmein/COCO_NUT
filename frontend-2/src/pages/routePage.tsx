@@ -1,13 +1,13 @@
 import { useState } from 'react';
 
-
-import RouteForm from '@/modules/routeForm/routeForm';
-import YandexRouteMap from '@/modules/yandexRouteMap';
+import RouteForm from '@/modules/routeModule/routeForm/routeForm';
+import YandexRouteMap from '@/modules/routeModule/yandexRouteMap';
 
 export const RoutePage = () =>{ 
      const [points, setPoints] = useState<
     { latitude: number; longitude: number; address?: string }[]
   >([]);
+
     return (
         <section>
 
