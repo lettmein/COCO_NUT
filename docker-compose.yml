@@ -20,9 +20,32 @@ services:
     build:
       context: .
       dockerfile: ./backend-1/Dockerfile
+      target: dev
     container_name: be-1
     env_file:
       - .env
+    environment:
+      - USE_YANDEX=true            # false => fallback haversine
+      - MATCH_RADIUS_KM=30         # максимальный detour в минутах ниже
+      - MATCH_MAX_DETOUR_MIN=60    # фильтр по "допустимому крюку" для одной заявки
+      - MATCH_AVG_SPEED_KMH=60     # для fallback
+      - MATCH_WORKER_INTERVAL_SEC=30
+      - AUDIT_URL=http://audit:8080
+      - SEED_POINTS=true
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${BE1_PORT:-8001}:8080"
+    volumes:
+      - ./backend-1:/app
+      - go_mod_cache:/go/pkg/mod
+      - go_build_cache:/root/.cache/go-build
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:8080/health > /dev/null || exit 1" ]
+      interval: 5s
+      timeout: 3s
+      retries: 3
   be-2:
     build:
       context: .
